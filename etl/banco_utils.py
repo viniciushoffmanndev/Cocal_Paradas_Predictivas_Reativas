@@ -2,16 +2,18 @@ import jaydebeapi
 import os
 import pandas as pd
 
-DRIVER_PATH = "./drivers/h2-2.3.233.jar"
+DRIVER_PATH = "./drivers/h2-2.3.232.jar"
 DB_PATH = "./data/h2_banco"
 DEFAULT_TABELA = "paradas"
+USER = os.getenv("H2_USER", "")
+PASSWORD = os.getenv("H2_PASSWORD", "")
 
 def conectar_h2():
     """Estabelece conexão com banco H2 via JDBC."""
     conn = jaydebeapi.connect(
         "org.h2.Driver",
         f"jdbc:h2:file:{DB_PATH}",
-        ["", ""],
+        [USER, PASSWORD],
         os.path.abspath(DRIVER_PATH)
     )
     print("Conexão com H2 estabelecida")
@@ -23,10 +25,11 @@ def criar_tabela(conn, tabela=DEFAULT_TABELA):
     cursor.execute(f"DROP TABLE IF EXISTS {tabela}")
     cursor.execute(f"""
         CREATE TABLE {tabela} (
+            id INT AUTO_INCREMENT PRIMARY KEY,
             tipo VARCHAR,
             equipamentop VARCHAR,
             data TIMESTAMP,
-            duracao DOUBLE,
+            duracao INT,
             causa VARCHAR,
             acao VARCHAR,
             prevencao VARCHAR,
@@ -42,7 +45,7 @@ def inserir_dados(df: pd.DataFrame, conn, tabela=DEFAULT_TABELA):
     cursor = conn.cursor()
     for _, row in df.iterrows():
         cursor.execute(
-            f"INSERT INTO {tabela} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            f"INSERT INTO {tabela} (tipo, equipamento, data, duracao, causa, acao, prevencao, impacto, responsavel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             tuple(row.values)
         )
     conn.commit()

@@ -13,7 +13,7 @@ def ler_planilha():
         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
 
     try:
-        df = pd.read_excel(caminho_arquivo, engine="openpyxl")
+        df = pd.read_excel(caminho_arquivo, sheet_name=0, engine="openpyxl")
         print(f"Planilha lida com sucesso: {caminho_arquivo.name}")
         return df
     except Exception as e:

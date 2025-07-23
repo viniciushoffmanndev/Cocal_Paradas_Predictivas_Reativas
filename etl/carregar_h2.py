@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from banco_utils import conectar_h2, criar_tabela, inserir_dados, listar_registros
 from etl.transformar_dados import limpar_dados
 from etl.extrair_excel import ler_planilha
