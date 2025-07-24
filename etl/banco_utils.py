@@ -27,7 +27,7 @@ def criar_tabela(conn, tabela=DEFAULT_TABELA):
         CREATE TABLE {tabela} (
             id INT AUTO_INCREMENT PRIMARY KEY,
             tipo VARCHAR,
-            equipamentop VARCHAR,
+            equipamento VARCHAR,
             data TIMESTAMP,
             duracao INT,
             causa VARCHAR,
@@ -39,18 +39,44 @@ def criar_tabela(conn, tabela=DEFAULT_TABELA):
     """)
     cursor.close()
     print(f"Tabela '{tabela}' criada com sucesso")
+    
 
 def inserir_dados(df: pd.DataFrame, conn, tabela=DEFAULT_TABELA):
-    """Insere os dados do DataFrame na tabela H2."""
+    """Insere os dados do DataFrame na tabela H2 via batch insert."""
     cursor = conn.cursor()
-    for _, row in df.iterrows():
+    
+    print("→ Número de colunas por linha:", len(df.columns))
+    print("→ Nome das colunas:", df.columns.tolist())
+    
+    # Define a query de inserção sem o campo 'id' (auto_increment)
+    query = f"""
+        INSERT INTO {tabela}
+        (tipo, equipamento, data, duracao, causa, acao, prevencao, impacto, responsavel)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    """
+    Isso transforma os valores datetime em strings seguras como '2025-07-01 08:20:00', 
+    compatíveis com a coluna TIMESTAMP no H2 e evita que o driver tente lidar com objetos Timestamp.
+    df["data"] = df["data"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    Com isso, o executemany vai funcionar sem reclamar dos tipos, e os registros serão
+    persistidos corretamente.
+    """
+    # Converte coluna "data" para string no formato aceito pelo JDBC
+    df["data"] = df["data"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    
+    registros = [tuple(row) for row in df.values] # Transforma o DataFrame em lista de tuplas
+    cursor.executemany(query, registros)
+    
+    # Método anterior
+    """for _, row in df.iterrows():
         cursor.execute(
             f"INSERT INTO {tabela} (tipo, equipamento, data, duracao, causa, acao, prevencao, impacto, responsavel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             tuple(row.values)
-        )
+        )"""
     conn.commit()
     cursor.close()
-    print(f"{len(df)} registros inseridos na tabela '{tabela}'")
+    print(f"{len(df)} registros inseridos na tabela '{tabela}' com batch insert")
 
 def listar_registros(conn, tabela=DEFAULT_TABELA, limite=10):
     """Exibe os primeiros registros da tabela para conferência."""

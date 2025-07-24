@@ -20,6 +20,8 @@ def ler_planilha():
         print(f"Erro ao ler planilha: {e}")
         raise
 
+       
+
 # Teste rápido
 if __name__ == "__main__":
     dados = ler_planilha()

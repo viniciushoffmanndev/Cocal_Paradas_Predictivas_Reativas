@@ -5,31 +5,46 @@
 - Validação: detectar registros suspeitos ou inconsistentes para tratamento
 """
 
-
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import sys
+import unicodedata
+import os
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-
-def padronizar_colunas(df: pd.DataFrame) -> pd.DataFrame: # Padroniza os nomes de colunas e aplica renomeações compatíveis com o banco
+def padronizar_colunas(df: pd.DataFrame) -> pd.DataFrame:
     """
     Padroniza os nomes das colunas e aplica renomeações para compatibilidade com o banco.
+    Remove espaços, acentos e caracteres especiais.
     """
-    
-    df.columns = df.columns.str.strip().str.replace(" ", "_") # Remove espaços e substitui por underline
 
+    df.columns = ( # Normaliza nomes: tira espaços extras, acentos, pontuação e converte para minúsculas
+        df.columns
+        .str.strip()                                # Remove espaços nas bordas
+        .str.lower()                                # Minúsculas
+        .str.replace(r"[^\w\s]", "", regex=True)    # Remove pontuação
+        .str.replace(" ", "_")                      # Espaço vira underscore
+    )
     
-    df = df.rename(columns={ # Renomeia para nomes internos padronizados
-        "Tipo_Parada": "tipo",
-        "Equipamento": "equipamentop",
-        "Data_Hora": "data",
-        "Duração_(min)": "duracao",
-        "Causa_Principal": "causa",
-        "Ação_Corretiva": "acao",
-        "Prevenção_Recomendada": "prevencao",
-        "Impacto_Produção": "impacto",
-        "Responsável": "responsavel"
+    df.columns = [ # Remove acentuação
+        unicodedata.normalize("NFKD", col).encode("ASCII", "ignore").decode("utf-8")
+        for col in df.columns
+    ]
+    
+    print("→ Colunas padronizadas:", df.columns.tolist())  # Visualiza resultado da padronização
+    
+    df = df.rename(columns={ # Renomeia conforme padrão do banco
+        "tipo_parada": "tipo",
+        "equipamento": "equipamento",
+        "data_hora": "data",
+        "duracao_min": "duracao",
+        "causa_principal": "causa",
+        "acao_corretiva": "acao",
+        "prevencao_recomendada": "prevencao",
+        "impacto_producao": "impacto",
+        "responsavel": "responsavel"
     }, errors="ignore")
 
     return df
@@ -46,12 +61,14 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame: # Normaliza estrutura do Dat
     
     df = padronizar_colunas(df)
     df = df.dropna(how="all")
-
+    
     campos_obrigatorios = [
         "tipo", "equipamento", "data", "duracao", "causa", 
-        "acao", "prevencao", "impacto", "responsavel"]
+        "acao", "prevencao", "impacto", "responsavel"
+        ]
     
     faltanto = [col for col in campos_obrigatorios if col not in df.columns] # Verificação de presença das colunas
+    
     if faltanto:
         raise ValueError(f"Colunas obrigatórias ausentes: {faltanto}")
     
@@ -65,42 +82,28 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame: # Normaliza estrutura do Dat
         if coluna not in ["tipo", "impacto"]:
             df[coluna] = df[coluna].str.strip()
 
-    if "data" in df.columns:  # Converte a coluna 'data' para datetime no formato ISO 8601 (padrão universal para bancos)
-        df["data"] = pd.to_datetime(df["data"], errors="coerce")
-        df["data"] = df["data"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    
-    if "duracao" in df.columns: # Trata a coluna 'duração', convertendo valores textuais ou com vírgula para inteiros seguros
-        df["duracao"] = (
-            df["duracao"]
-            .astype(str) # garantir que virou string
-            .str.replace(",", ".", regex=False) # se tiver virgula decimal
-            .str.extract(r"(\d+)")[0] # extrai apenas número válido
-        )
+        if "data" in df.columns: # Converte a coluna 'data' para datetime no formato ISO 8601 (padrão universal para bancos)
+            df["data"] = pd.to_datetime(df["data"], errors="coerce").fillna(pd.Timestamp("1900-01-01"))
+
+        if "duracao" in df.columns:
+            df["duracao"] = pd.to_numeric(df["duracao"], errors="coerce").fillna(0).astype(int)
         
-        df = df.dropna(subset=["duracao"]) # limpa nulo antes de converter
-        df ["duracao"] = df["duracao"].astype(int) # faz conversão segura        
-        
-        df = df.dropna(subset=["data", "duracao"])
-        
+        os.makedirs("auditorias", exist_ok=True) # Auditoria de registros rejeitados (por data ou duração inválida)
+        registro_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        arquivo = f"auditorias/registros_rejeitados_{registro_hora}.xlsx"
+
+        registros_rejeitados = df[df["data"].isna() | df["duracao"].isna()]
+        if not registros_rejeitados.empty:
+            registros_rejeitados.to_excel(arquivo, index=False)
+            print(f"{len(registros_rejeitados)} registros rejeitados salvos em '{arquivo}'")
+            
         colunas_desejadas = [ # Garantir que o DataFrame tenha somente as colunas esperadas
         "tipo", "equipamento", "data", "duracao", "causa",
         "acao", "prevencao", "impacto", "responsavel"
         ]
-        
-        df = df[colunas_desejadas]
-        
-        # Confirmar a estrutura final
-        print("→ Colunas finais:", df.columns.tolist())
-        print("→ Registros:", len(df))
-        
-        print("→ Amostra da coluna 'data' original:")
-        print(df["data"].head(5))
-        print("→ Tipo detectado:", df["data"].dtype)
-        print("→ Cabeçalho original da planilha:")
-        print(df.columns.tolist())
-        print("→ Shape do DataFrame:", df.shape)
-        print(df.head(5))
 
+        # Finaliza estrutura
+        df = df[colunas_desejadas]
 
         return df
 
