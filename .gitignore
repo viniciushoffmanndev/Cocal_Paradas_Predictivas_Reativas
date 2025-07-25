@@ -1,44 +1,80 @@
-# Ambiente virtual
-venv/
-.venv/
-.env/
-
-# Cache do Python
+# ==========================================
+# Python
+# ==========================================
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
 
-# Logs e arquivos temporários
+# Arquivos de log
 *.log
-*.tmp
-*.sqlite3
 
-# Pastas de IDEs/editores
+# Arquivos de cache e dumps
+*.cache
+*.pid
+*.pkl
+*.db-journal
+
+# Configs do pytest
+.pytest_cache/
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Libs
+requirements.txt
+
+# Virtualenv
+.venv/
+env/
+ENV/
+venv/
+pip-wheel-metadata/
+
+# ==========================================
+# Dados sensíveis
+data/
+drivers/
+# ==========================================
+# Planilhas e banco local
+data/*.xlsx
+data/*.xls
+data/*.csv
+data/*.mv.db
+
+# ==========================================
+# JARs, binários e outros
+# ==========================================
+drivers/*.jar
+
+# ==========================================
+# IDEs e editores
+# ==========================================
 .vscode/
 .idea/
 
-# Arquivos do sistema
-*.DS_Store
+# ==========================================
+# SOs e arquivos ocultos
+# ==========================================
+.DS_Store
 Thumbs.db
+desktop.ini
 
-# Executáveis gerados
-*.exe
-*.dll
-*.so
-*.deb
-
-# Imagens de interface (se você não quiser subir os ícones)
-*.png
-*.jpg
-
-# Excetua imagens de documentação
-!docs/img/*.png
-
-
-# Arquivos de dados simulados
-data/*.xlsx
-
-# Outros
-dist/
+# ==========================================
+# Build e distribuição
+# ==========================================
 build/
+dist/
+*.egg-info/
+.eggs/
+
+# ==========================================
+# Arquivos de segurança
+# ==========================================
+# Tokens, chaves, credenciais
+*.pem
+*.key
+*.env
+.env.*
+secrets.*
