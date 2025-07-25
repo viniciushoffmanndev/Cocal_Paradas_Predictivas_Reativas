@@ -70,6 +70,7 @@ class H2Manager:
         Com isso, o executemany vai funcionar sem reclamar dos tipos, e os registros serão
         persistidos corretamente.
         """
+        
         # Converte coluna "data" para string no formato aceito pelo JDBC
         df["data"] = df["data"].dt.strftime("%Y-%m-%d %H:%M:%S")
         registros = [tuple(row) for row in df[COLUNAS_BANCO].values]  # Transforma o DataFrame em tuplas
@@ -99,4 +100,4 @@ class H2Manager:
         """Encerra conexão com o banco."""
         if self.conn:
             self.conn.close()
-            print("Conexão encerrada")
+            print("Conexão encerrada")   
