@@ -1,5 +1,5 @@
 
-# Do Excel ao Banco H2: Um Pipeline ETL Modular com Python e Java
+# Do Excel ao Banco H2: Um Pipeline ETL Modular com Python e Java (Mockados)
 
 ![ETL Pipeline](https://img.shields.io/badge/ETL-Python%20%2B%20Java-green)
 ![Modularização](https://img.shields.io/badge/Arquitetura-Modular-blue)
